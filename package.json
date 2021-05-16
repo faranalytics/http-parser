@@ -15,5 +15,8 @@
   "bugs": {
     "url": "https://github.com/faranalytics/http-parser/issues"
   },
-  "homepage": "https://github.com/faranalytics/http-parser#readme"
+  "homepage": "https://github.com/faranalytics/http-parser#readme",
+  "dependencies": {
+    "typescript": "^4.2.4"
+  }
 }
