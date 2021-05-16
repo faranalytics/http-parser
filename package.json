@@ -10,7 +10,7 @@
     "type": "git",
     "url": "git+https://github.com/faranalytics/http-parser.git"
   },
-  "author": "FAR",
+  "author": "FAR Analytics and Research",
   "license": "MIT",
   "bugs": {
     "url": "https://github.com/faranalytics/http-parser/issues"
