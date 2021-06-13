@@ -55,35 +55,40 @@
                     return [mediaRange];
                 }
 
-                if (char == ";") {
+                if (char == "," || char == ";") {
 
                     if (quoted) {
                         part = part + char;
                     }
-                    else {
-                        if (context == "subtype" && part) {
-                            mediaRange[context] = part;
-                            context = "parameter"
-                        }
-                        else if (context == "parameter" && token && part) {
-
-                            if (token == "q" && !mediaRange.weight.q) {
-                                mediaRange["weight"]["q"] = part;
-                                context = "accept-ext";
-                            }
-                            else {
-                                mediaRange[context][token] = part;
-                            }
-                        }
-                        else if (context == "accept-ext" && token) {
-                            mediaRange[context][token] = part;
-                        }
-                        else if (context == "accept-ext" && !token) {
-                            mediaRange[context][part] = "";
+                    else if (context == "subtype" && part) {
+                        mediaRange[context] = part;
+                        context = "parameter";
+                    }
+                    else if (context == "parameter" && token && part) {
+                        if (token == "q" && !mediaRange.weight.q) {
+                            mediaRange["weight"]["q"] = part;
+                            context = "accept-ext";
                         }
                         else {
-                            throw new Error();
+                            mediaRange[context][token] = part;
                         }
+                    }
+                    else if (context == "accept-ext" && token) {
+                        mediaRange[context][token] = part;
+                    }
+                    else if (context == "accept-ext" && !token) {
+                        mediaRange[context][part] = "";
+                    }
+                    else {
+                        throw new Error();
+                    }
+
+                    if (char == ",") {
+                        await new Promise((r, j) => setTimeout(() => r()));
+
+                        return [mediaRange].concat(await this.parseMediaRange(header.slice(++index)));
+                    }
+                    else {
                         part = "";
                         token = "";
                         ows = false;
@@ -155,36 +160,6 @@
                     else {
                         throw new Error();
                     }
-                }
-                else if (char == ",") {
-
-                    if (quoted) {
-                        part = part + char;
-                    }
-                    else if (context == "subtype" && part) {
-                        mediaRange[context] = part;
-                    }
-                    else if (context == "parameter" && token && part) {
-                        if (token == "q" && !mediaRange.weight.q) {
-                            mediaRange["weight"]["q"] = part;
-                        }
-                        else {
-                            mediaRange[context][token] = part;
-                        }
-                    }
-                    else if (context == "accept-ext" && token) {
-                        mediaRange[context][token] = part;
-                    }
-                    else if (context == "accept-ext" && !token) {
-                        mediaRange[context][part] = "";
-                    }
-                    else {
-                        throw new Error();
-                    }
-
-                    await new Promise((r, j) => setTimeout(() => r()));
-
-                    return [mediaRange].concat(await this.parseMediaRange(header.slice(++index)));
                 }
                 else if (ows) {
                     if (!this.isows(char)) {
@@ -263,7 +238,7 @@
 
         istchar(char) {
             for (let delim of '"(),/:;<=>?@[\\]{}') {
-                if (char === delim){
+                if (char === delim) {
                     return false;
                 }
             }
