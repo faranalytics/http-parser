@@ -1,4 +1,4 @@
-(function () {
+(async function () {
 
     class MediaRange {
         constructor() {
@@ -16,12 +16,11 @@
             this.parseMediaRange = this.parseMediaRange.bind(this);
         }
 
-        parseMediaRange(header) {
+        async parseMediaRange(header) {
 
-            let mediaRanges = [];
+            let mediaRange = new MediaRange();
             let part = "";
             let token = "";
-            let mediaRange = new MediaRange();
             let quoted = false;
             let escaped = false;
             let context = "type";
@@ -52,8 +51,7 @@
                         throw new Error();
                     }
 
-                    mediaRanges.push(mediaRange);
-                    break;
+                    return [mediaRange];
                 }
 
                 if (char == ";") {
@@ -121,6 +119,7 @@
                         context = "subtype";
                     }
                     else {
+                        console.log(context, part)
                         throw new Error();
                     }
                 }
@@ -186,42 +185,38 @@
                         throw new Error();
                     }
 
-                    token = "";
-                    part = "";
-                    context = "type";
+                    await new Promise((r, j) => setTimeout(() => r()));
 
-                    mediaRanges.push(mediaRange);
-
-                    mediaRange = new MediaRange();
+                    return [mediaRange].concat(await this.parseMediaRange(header.slice(++index)));
                 }
                 else {
                     if (context == "type") {
-
+                        part = part + char;
                     }
                     else if (context == "subtype") {
-
+                        part = part + char;
                     }
                     else if (context == "parameter" && token) {
                         //  We have a token; hence, it is a value.
                         if (quoted) {
-
+                            part = part + char;
                         }
                         else {
-
-                        }
-
-                    }
-                    else if (context == "parameter" && !token) {
-                        //  We do not have a token; hence, it is a name.
-                        if (this.istchar(char)) {
                             part = part + char;
                         }
                     }
+                    else if (context == "parameter" && !token) {
+                        //  We do not have a token; hence, it is a name.
+                        // if (this.istchar(char)) {
+                        //     part = part + char;
+                        // }
+                        part = part + char;
+                    }
                     else if (context == "accept-ext" && token) {
-
+                        part = part + char;
                     }
                     else if (context == "accept-ext" && !token) {
-
+                        part = part + char;
                     }
                     else {
                         throw new Error();
@@ -229,8 +224,6 @@
                 }
                 index = index + 1;
             }
-
-            return mediaRanges;
         }
 
         istchar(char) {
@@ -242,25 +235,32 @@
             return codePoint > 32 && codePoint < 95
         }
 
-        isqdtext(char) {
-            let codePoint = char.codePointAt(0);
-            if (
-                codePoint == 9 || 
-                codePoint == 32 || 
-                codePoint == 33 ||
-                
-                )
+        // isqdtext(char) {
+        //     let codePoint = char.codePointAt(0);
+        //     if (
+        //         codePoint == 9 || 
+        //         codePoint == 32 || 
+        //         codePoint == 33 ||
 
-        }
+        //         )
+
+        // }
     }
 
-    let header = 'text/*;q=0.3, text/html;q=0.7,text/html;level=1,text/html;level=2;q=0.4, */*;q=0.5;level="123"';
+    let accept_header = 'text/*;q=0.3, text/html;q=0.7,text/html;level=1,text/html;level=2;q=0.4, */*;q=0.5;level="123"';
 
-    console.log(header);
+    console.log(accept_header);
 
     httpParser = new HTTPParser();
 
-    let mediaRanges = httpParser.parseMediaRange(header);
+    let mediaRanges = null;
+
+    try {
+        mediaRanges = await httpParser.parseMediaRange(accept_header);
+    }
+    catch (e) {
+        console.log(e);
+    }
 
     console.log(mediaRanges);
 }());
