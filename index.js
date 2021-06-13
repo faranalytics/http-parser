@@ -164,7 +164,7 @@
                     if (context == "type") {
 
                         if (ows && !part && this.istchar(char)) {
-                            //  OWS preceeds the start of the token; hence, proceed.
+                            //  OWS precedes the start of the token; hence, proceed.
                             part = part + char;
                             ows = false;
                         }
