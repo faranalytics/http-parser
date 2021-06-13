@@ -24,6 +24,7 @@
             let quoted = false;
             let escaped = false;
             let context = "type";
+            let ows = false;
 
             let index = 0; while (true) {
 
@@ -59,36 +60,33 @@
                     if (quoted) {
                         part = part + char;
                     }
-                    else if (context == "subtype" && part) {
-                        mediaRange[context] = part;
-                        context = "parameter"
-                        part = "";
-                        token = "";
-                    }
-                    else if (context == "parameter" && token && part) {
-                        if (token == "q" && !mediaRange.weight.q) {
-                            mediaRange["weight"]["q"] = part;
-                            context = "accept-ext";
+                    else {
+                        if (context == "subtype" && part) {
+                            mediaRange[context] = part;
+                            context = "parameter"
                         }
-                        else {
+                        else if (context == "parameter" && token && part) {
+
+                            if (token == "q" && !mediaRange.weight.q) {
+                                mediaRange["weight"]["q"] = part;
+                                context = "accept-ext";
+                            }
+                            else {
+                                mediaRange[context][token] = part;
+                            }
+                        }
+                        else if (context == "accept-ext" && token) {
                             mediaRange[context][token] = part;
                         }
-
-                        token = "";
+                        else if (context == "accept-ext" && !token) {
+                            mediaRange[context][part] = "";
+                        }
+                        else {
+                            throw new Error();
+                        }
                         part = "";
-                    }
-                    else if (context == "accept-ext" && token) {
-                        mediaRange[context][token] = part;
                         token = "";
-                        part = ""
-                    }
-                    else if (context == "accept-ext" && !token) {
-                        mediaRange[context][part] = "";
-                        token = "";
-                        part = ""
-                    }
-                    else {
-                        throw new Error();
+                        ows = false;
                     }
                 }
                 else if (char == "=") {
@@ -119,7 +117,6 @@
                         context = "subtype";
                     }
                     else {
-                        console.log(context, part)
                         throw new Error();
                     }
                 }
@@ -189,28 +186,66 @@
 
                     return [mediaRange].concat(await this.parseMediaRange(header.slice(++index)));
                 }
+                else if (ows) {
+                    if (!this.isows(char)) {
+                        throw new Error();
+                    }
+                }
                 else {
                     if (context == "type") {
-                        part = part + char;
+
+                        if (!part && this.isows(char)) {
+
+                        }
+                        else if (this.istchar(char)) {
+                            part = part + char;
+                        }
+                        else {
+                            console.log(mediaRange)
+                            console.log(char);
+                            throw new Error();
+                        }
                     }
                     else if (context == "subtype") {
-                        part = part + char;
+
+                        if (!ows && this.istchar(char)) {
+                            part = part + char;
+                        }
+                        else if (part && this.isows(char)) {
+                            ows = true;
+                        }
+                        else {
+                            throw new Error();
+                        }
                     }
                     else if (context == "parameter" && token) {
                         //  We have a token; hence, it is a value.
+
                         if (quoted) {
                             part = part + char;
                         }
                         else {
-                            part = part + char;
+                            if (!ows && this.istchar(char)) {
+                                part = part + char;
+                            }
+                            else if (part && this.isows(char)) {
+                                ows = true;
+                            }
+                            else {
+                                throw new Error();
+                            }
                         }
                     }
                     else if (context == "parameter" && !token) {
                         //  We do not have a token; hence, it is a name.
-                        // if (this.istchar(char)) {
-                        //     part = part + char;
-                        // }
-                        part = part + char;
+                        if (!part && this.isows(char)) {
+                        }
+                        else if (this.istchar(char)) {
+                            part = part + char;
+                        }
+                        else {
+                            throw new Error();
+                        }
                     }
                     else if (context == "accept-ext" && token) {
                         part = part + char;
@@ -227,27 +262,34 @@
         }
 
         istchar(char) {
-            for (let delim in '"(),/:;<=>?@[\]{}') {
-                if (char === delim)
+            for (let delim of '"(),/:;<=>?@[\\]{}') {
+                if (char === delim){
                     return false;
+                }
             }
             let codePoint = char.codePointAt(0);
-            return codePoint > 32 && codePoint < 95
+            return codePoint >= 33 && codePoint <= 126
         }
 
-        // isqdtext(char) {
-        //     let codePoint = char.codePointAt(0);
-        //     if (
-        //         codePoint == 9 || 
-        //         codePoint == 32 || 
-        //         codePoint == 33 ||
+        isqdtext(char) {
+            let codePoint = char.codePointAt(0);
+            return (
+                codePoint == 9 || // HTAB
+                codePoint == 32 || // SP
+                codePoint == 33 || // %x21
+                (codePoint >= 35 && codePoint <= 91) || // %x23-5B
+                (codePoint >= 93 && codePoint <= 126) || // %x5D-7E
+                (codePoint >= 128 && codePoint <= 255) // %x80-FF
+            )
+        }
 
-        //         )
-
-        // }
+        isows(char) {
+            let codePoint = char.codePointAt(0);
+            return codePoint == 9 || codePoint == 32
+        }
     }
 
-    let accept_header = 'text/*;q=0.3, text/html;q=0.7,text/html;level=1,text/html;level=2;q=0.4, */*;q=0.5;level="123"';
+    let accept_header = 'text/*;q=0.3, text/html;q=0.7,text/html;level=1,text/htmla  ; lev=2   ;level=3.0;q=0.4, */*;q=0.5;level="123"';
 
     console.log(accept_header);
 
