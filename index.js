@@ -222,7 +222,7 @@
 
         istchar(char) {
             for (let delim of '"(),/:;<=>?@[\\]{}') {
-                if (char === delim) {
+                if (char == delim) {
                     return false;
                 }
             }
@@ -248,7 +248,7 @@
         }
     }
 
-    let accept_header = 'text/* ; q=0.3, text/html ;q=0.7,text/html;level=1,text/htmla  ; lev=2   ; level=3.0;q=0.4;a=a;    b   , */* ;q=0.5;   level="   123   "';
+    let accept_header = ' text/* ; q=0.3, text/html ;q=0.7,text/html;level=1,text/htmla  ; lev=2   ; level=3.0;q=0.4;a=a;    b   , */* ;q=0.5;   level="   123   "';
 
     console.log(accept_header);
 
